@@ -29,7 +29,7 @@ Open command line or terminal window and navigate to the folder usappointment.js
 
 **-r** Country code (ISO-3166 Alpha-2 code <https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes>). Canada (ca), United States (us)
 
-**-d** Threshold date to look for earlier appointments. Format: YYYY-MM-DD
+**-d** Threshold date to look for earlier appointments. Format: YYYY-MM-DD, optional: Don't pass "-d date" in the command to select current appointment date.
 
 **-u** Username
 
