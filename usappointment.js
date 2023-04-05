@@ -288,7 +288,9 @@ const axios = require('axios');
       await element.click({ offset: { x: 34, y: 11.34375 } });
       await targetPage.waitForNavigation();
     }
-    // We are logged in now. Check for current appointment date if current date is not specified
+
+    // We are logged in now.
+    // Check for current appointment date if current date is not specified
     if (currentDate == null) {
       await page.goto(
         'https://ais.usvisa-info.com/en-' +
@@ -308,41 +310,6 @@ const axios = require('axios');
       currentDate = appointmentDate;
     }
 
-    //  Check available dates from the API
-    {
-      const targetPage = page;
-      const response = await targetPage.goto(
-        'https://ais.usvisa-info.com/en-' +
-          region +
-          '/niv/schedule/' +
-          appointmentId +
-          '/appointment/days/' +
-          consularId +
-          '.json?appointments[expedite]=false'
-      );
-
-      const availableDates = JSON.parse(await response.text());
-
-      if (availableDates.length <= 0) {
-        log('There are no available dates for consulate with id ' + consularId);
-        await browser.close();
-        return false;
-      }
-
-      const firstDate = new Date(availableDates[0].date);
-
-      if (firstDate > currentDate) {
-        log(
-          'There is not an earlier date available than ' +
-            currentDate.toISOString().slice(0, 10)
-        );
-        await browser.close();
-        return false;
-      }
-
-      notify('Found an earlier date! ' + firstDate.toISOString().slice(0, 10));
-    }
-
     // Go to appointment page
     {
       const targetPage = page;
@@ -354,7 +321,7 @@ const axios = require('axios');
           '/appointment',
         { waitUntil: 'domcontentloaded' }
       );
-      await sleep(1000);
+      await sleep(500);
     }
 
     // Select multiple people if it is a group appointment
@@ -391,23 +358,30 @@ const axios = require('axios');
         '#appointments_consulate_appointment_facility_id',
         consularId
       );
-      await sleep(1000);
+      await sleep(500);
     }
 
     // Click on date input
     {
       const targetPage = page;
-      const element = await waitForSelectors(
-        [
-          ['aria/Date of Appointment *'],
-          ['#appointments_consulate_appointment_date'],
-        ],
-        targetPage,
-        { timeout, visible: true }
-      );
-      await scrollIntoViewIfNeeded(element, timeout);
-      await element.click({ offset: { x: 394.5, y: 17.53125 } });
-      await sleep(1000);
+      try {
+        const element = await waitForSelectors(
+          [
+            ['aria/Date of Appointment *'],
+            ['#appointments_consulate_appointment_date'],
+          ],
+          targetPage,
+          { timeout, visible: true }
+        );
+        await scrollIntoViewIfNeeded(element, timeout);
+        await element.click({ offset: { x: 394.5, y: 17.53125 } });
+        await sleep(500);
+      } catch (error) {
+        // if we can't find the date input, it means there are no available dates
+        log('There are no available dates for consulate with id ' + consularId);
+        await browser.close();
+        return false;
+      }
     }
 
     // Keep clicking next button until we find the first available date and click to that date
@@ -429,6 +403,27 @@ const axios = require('axios');
           await page.click(
             '#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a'
           );
+
+          const selectedDateText = await page.evaluate(() => {
+            return document.getElementById(
+              'appointments_consulate_appointment_date'
+            ).value;
+          });
+          const selectedDate = new Date(selectedDateText);
+
+          if (selectedDate > currentDate) {
+            log(
+              'There is not an earlier date available than ' +
+                currentDate.toISOString().slice(0, 10)
+            );
+            await browser.close();
+            return false;
+          }
+
+          notify(
+            'Found an earlier date! ' + selectedDate.toISOString().slice(0, 10)
+          );
+
           await sleep(500);
           break;
         } catch (err) {
@@ -469,7 +464,7 @@ const axios = require('axios');
           .querySelector('#appointments_consulate_appointment_time')
           .dispatchEvent(event);
       });
-      await sleep(1000);
+      await sleep(500);
     }
 
     // Click on reschedule button
@@ -482,7 +477,7 @@ const axios = require('axios');
       );
       await scrollIntoViewIfNeeded(element, timeout);
       await element.click({ offset: { x: 78.109375, y: 20.0625 } });
-      await sleep(1000);
+      await sleep(500);
     }
 
     // Click on submit button on the confirmation popup
@@ -517,7 +512,7 @@ const axios = require('axios');
         break;
       }
     } catch (err) {
-      // Swallow the error and keep running in case we encountered an error.
+      log(err);
     }
 
     await sleep(retryTimeout);
