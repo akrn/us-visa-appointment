@@ -5,21 +5,25 @@ const axios = require('axios');
 (async () => {
   //#region Command line args
   const args = parseArgs(process.argv.slice(2), {
-    string: ['u', 'p', 'c', 'a', 'n', 'd', 'r'],
-    boolean: ['g'],
+    string: ['u', 'p', 'c', 'a', 'n', 'd', 'r', 'i', 't', 'o'],
+    boolean: ['g', 'h'],
   });
   var currentDate;
   if (args.d) {
     currentDate = new Date(args.d);
+    console.log(currentDate);
   }
   const usernameInput = args.u;
   const passwordInput = args.p;
   const appointmentId = args.a;
   const retryTimeout = args.t * 1000;
   const consularId = args.c;
-  const userToken = args.n;
+  const pushoverUserToken = args.n;
+  const telegramChatId = args.i;
+  const telegramToken = args.o;
   const groupAppointment = args.g;
   const region = args.r;
+  const headless = args.h;
   //#endregion
 
   //#region Helper functions
@@ -121,7 +125,22 @@ const axios = require('axios');
   async function notify(msg) {
     log(msg);
 
-    if (!userToken) {
+    if (telegramChatId && telegramToken) {
+      const params = {
+        chat_id: telegramChatId,
+        text: `[US VISA]\n\n${msg}`,
+      };
+
+      try {
+        await axios.post(`https://api.telegram.org/bot${telegramToken}/sendMessage`, null, { params });
+      } catch (e) {
+        log(e);
+      }
+
+      return;
+    }
+
+    if (!pushoverUserToken) {
       return;
     }
 
@@ -129,7 +148,7 @@ const axios = require('axios');
     const apiEndpoint = 'https://api.pushover.net/1/messages.json';
     const data = {
       token: pushOverAppToken,
-      user: userToken,
+      user: pushoverUserToken,
       message: msg,
     };
 
@@ -139,9 +158,7 @@ const axios = require('axios');
 
   async function runLogic() {
     //#region Init puppeteer
-    const browser = await puppeteer.launch();
-    // Comment above line and uncomment following line to see puppeteer in action
-    // const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch({ headless });
     const page = await browser.newPage();
     const timeout = 5000;
     const navigationTimeout = 60000;
@@ -412,7 +429,7 @@ const axios = require('axios');
           const selectedDate = new Date(selectedDateText);
 
           if (selectedDate > currentDate) {
-            log(
+            notify(
               'There is not an earlier date available than ' +
                 currentDate.toISOString().slice(0, 10)
             );
@@ -447,56 +464,56 @@ const axios = require('axios');
     }
 
     // Select the first available Time from the time dropdown
-    {
-      const targetPage = page;
-      const element = await waitForSelectors(
-        [['#appointments_consulate_appointment_time']],
-        targetPage,
-        { timeout, visible: true }
-      );
-      await scrollIntoViewIfNeeded(element, timeout);
-      await page.evaluate(() => {
-        document.querySelector(
-          '#appointments_consulate_appointment_time option:nth-child(2)'
-        ).selected = true;
-        const event = new Event('change', { bubbles: true });
-        document
-          .querySelector('#appointments_consulate_appointment_time')
-          .dispatchEvent(event);
-      });
-      await sleep(500);
-    }
+    // {
+    //   const targetPage = page;
+    //   const element = await waitForSelectors(
+    //     [['#appointments_consulate_appointment_time']],
+    //     targetPage,
+    //     { timeout, visible: true }
+    //   );
+    //   await scrollIntoViewIfNeeded(element, timeout);
+    //   await page.evaluate(() => {
+    //     document.querySelector(
+    //       '#appointments_consulate_appointment_time option:nth-child(2)'
+    //     ).selected = true;
+    //     const event = new Event('change', { bubbles: true });
+    //     document
+    //       .querySelector('#appointments_consulate_appointment_time')
+    //       .dispatchEvent(event);
+    //   });
+    //   await sleep(500);
+    // }
 
-    // Click on reschedule button
-    {
-      const targetPage = page;
-      const element = await waitForSelectors(
-        [['aria/Reschedule'], ['#appointments_submit']],
-        targetPage,
-        { timeout, visible: true }
-      );
-      await scrollIntoViewIfNeeded(element, timeout);
-      await element.click({ offset: { x: 78.109375, y: 20.0625 } });
-      await sleep(500);
-    }
+    // // Click on reschedule button
+    // {
+    //   const targetPage = page;
+    //   const element = await waitForSelectors(
+    //     [['aria/Reschedule'], ['#appointments_submit']],
+    //     targetPage,
+    //     { timeout, visible: true }
+    //   );
+    //   await scrollIntoViewIfNeeded(element, timeout);
+    //   await element.click({ offset: { x: 78.109375, y: 20.0625 } });
+    //   await sleep(500);
+    // }
 
-    // Click on submit button on the confirmation popup
-    {
-      const targetPage = page;
-      const element = await waitForSelectors(
-        [
-          ['aria/Cancel'],
-          ['body > div.reveal-overlay > div > div > a.button.alert'],
-        ],
-        targetPage,
-        { timeout, visible: true }
-      );
-      await scrollIntoViewIfNeeded(element, timeout);
-      await page.click(
-        'body > div.reveal-overlay > div > div > a.button.alert'
-      );
-      await sleep(5000);
-    }
+    // // Click on submit button on the confirmation popup
+    // {
+    //   const targetPage = page;
+    //   const element = await waitForSelectors(
+    //     [
+    //       ['aria/Cancel'],
+    //       ['body > div.reveal-overlay > div > div > a.button.alert'],
+    //     ],
+    //     targetPage,
+    //     { timeout, visible: true }
+    //   );
+    //   await scrollIntoViewIfNeeded(element, timeout);
+    //   await page.click(
+    //     'body > div.reveal-overlay > div > div > a.button.alert'
+    //   );
+    //   await sleep(5000);
+    // }
 
     await browser.close();
     return true;

@@ -1,6 +1,6 @@
 # What is this?
 
-This is a small puppeteer script that can be used to find and schedule an earlier US consulate appointment for US Visa in Canada and other countries. You **must** have an appointment made manually before using this script.
+This is a small puppeteer script that can be used to find and schedule an earlier US consulate appointment for US Visa in Canada and other countries using AIS system. You **must** have an appointment made manually before using this script.
 
 This might be able to used for other countries by finding the consular ids mentioned below for that specific country.
 
@@ -8,10 +8,7 @@ This might be able to used for other countries by finding the consular ids menti
 
 1. Download and install Node.JS LTS 16.14.2 from <https://nodejs.org/en/download/> for whatever OS you are using
 2. Open command line/terminal window and type in following
-   1. npm install puppeteer --save
-   2. npm install minimist --save
-   3. npm install axios --save
-3. Install Pushover Notifications app from App Store/Google Play if you would like to have push notifications when a date is found
+   1. npm i
 
 ## Usage
 
