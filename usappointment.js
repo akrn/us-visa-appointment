@@ -11,7 +11,6 @@ const axios = require('axios');
   var currentDate;
   if (args.d) {
     currentDate = new Date(args.d);
-    console.log(currentDate);
   }
   const usernameInput = args.u;
   const passwordInput = args.p;
@@ -429,7 +428,7 @@ const axios = require('axios');
           const selectedDate = new Date(selectedDateText);
 
           if (selectedDate > currentDate) {
-            notify(
+            log(
               'There is not an earlier date available than ' +
                 currentDate.toISOString().slice(0, 10)
             );
